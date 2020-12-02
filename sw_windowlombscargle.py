@@ -12,7 +12,7 @@ import scipy.signal as signal
 import numpy as np
 import math
 
-def read_file_data(filepath):
+def read_raw_file_data(filepath):
     '''
     Read data in list
     '''
@@ -31,7 +31,7 @@ def process_file(data, out_filepath, window, step):
     while (line_cursor < (len(data) - window)):
         with open(out_filepath + '_c' + "{:08d}".format(line_cursor) + '_w' + str(window) + '_s' + str(step) + ".dat", 'w') as dest_f:
             for i in range(window):
-                dest_f.write("{}\t{}\n".format(data[line_cursor + i][0], data[line_cursor + i][1]))
+                dest_f.write(data[line_cursor + i])
         line_cursor += step
 
 def read_file_data(filepath):
@@ -144,6 +144,14 @@ def process_windowed_files(path, output_file_path, lb_freq_start, lb_freq_end, l
     files = glob.glob(path + "*.dat")  
 
     for filepath in files:
+        # Reject old merged files
+        if "!" in filepath:
+            continue
+
+        # Reject old windowed files
+        if "windowed" in filepath:
+            continue
+
         print("Process >> " + filepath)
 
         try:
@@ -169,32 +177,39 @@ def process_windowed_files(path, output_file_path, lb_freq_start, lb_freq_end, l
         finally:
             print()
     
-    with open(output_file_path, 'w') as merged_file:
+        try:
+            os.remove(output_file_path)
+        except Exception as e:
+            pass
+        finally:
+            pass
         windowed_files = glob.glob(path + "*_windowed.dat")
         for windowed_file in windowed_files:           
             with open(windowed_file, 'r') as windowed_f:
                 data = windowed_f.read()
-                merged_file.write(data)
+                with open(output_file_path, 'a') as merged_file:
+                    merged_file.write(data)
 
 
 def main():
     print("Script is started")
 
-    files = glob.glob("./input/*.dat")      # Change path here
-    WINDOW = 300                            # Change window value here
-    STEP = 150                              # Change step value here
-    FREQ_START = 0.01                       # Change freq start here
-    FREQ_END = 4.0                          # Change freq end here
-    FREQ_NUM = 100000                       # Change freq num here
+    files = glob.glob("./input/*.dat")              # Change path here or write filepath
+    OUTPUT_PATH = "./output/"                       # Change output here
+    WINDOW = 300                                    # Change window value here
+    STEP = 150                                      # Change step value here
+    FREQ_START = 0.01                               # Change freq start here
+    FREQ_END = 4.0                                  # Change freq end here
+    FREQ_NUM = 100000                               # Change freq num here
 
     for filepath in files:
         print("Process >> " + filepath)
 
         try:
-            read_data = read_file_data(filepath)
-            out_dat_filepath = "./output/" + os.path.basename(filepath)
-            process_file(read_data, out_dat_filepath, WINDOW, STEP)
-            process_windowed_files('./output/', './output/!merged_file.dat', FREQ_START, FREQ_END, FREQ_NUM)
+            read_lines = read_raw_file_data(filepath)
+            out_dat_filepath = OUTPUT_PATH + os.path.basename(filepath)
+            process_file(read_lines, out_dat_filepath, WINDOW, STEP)
+            process_windowed_files(OUTPUT_PATH, f'{OUTPUT_PATH}!{os.path.basename(filepath)}_merged_file.dat', FREQ_START, FREQ_END, FREQ_NUM)
 
             print(f"<{filepath}> succesful processed by the script")
     
