@@ -47,16 +47,17 @@ def read_file_data(filepath):
         data_iter = csv.reader(dest_f,delimiter="\t")
         raw_data = [raw_data for raw_data in data_iter]
 
-    # Filter data with not-valid values or empty values
+    # Convert data to list. If data is absent set it to None
     for raw_val in raw_data:
+        amp = 0
+        time = 0
         try:
             amp = float(raw_val[0])
+        except:
+            amp = None
+        finally:
             time = float(raw_val[1])
             data.append([amp, time])
-        except:
-            pass
-        finally:
-            pass
 
     return data
 
@@ -94,7 +95,7 @@ def plot_graph(data, out_filepath, lb_freq_start=0.01, lb_freq_end=4.0, lb_freq_
     save_to_disk - if set to true then graph will be saved on the disk
 
     Return
-    List of lists of graph values in form [freq, pgram_value]
+    List of lists of graph values in form [freq, period, pgram_value, time_value]
     '''
 
     output_data = list()
@@ -102,9 +103,13 @@ def plot_graph(data, out_filepath, lb_freq_start=0.01, lb_freq_end=4.0, lb_freq_
     x = list()
     y = list()
 
+    # Get first time value as constant time value for all window
+    time_value = data[0][1]
+
     for val_pair in data:
-        x.append(val_pair[1])
-        y.append(val_pair[0])
+        if val_pair[0] != None:
+            x.append(val_pair[1])
+            y.append(val_pair[0])
 
     # Define the array of frequencies for which to compute the periodogram:
     f = np.linspace(lb_freq_start, lb_freq_end, lb_freq_num)
@@ -132,7 +137,7 @@ def plot_graph(data, out_filepath, lb_freq_start=0.01, lb_freq_end=4.0, lb_freq_
     # Generate output
     for idx, freq in enumerate(f):
         period = 2 * math.pi / freq
-        output_data.append([freq, period, pgram[idx], x[0]])
+        output_data.append([freq, period, pgram[idx], time_value])
 
     plt.cla()
     plt.clf()
@@ -168,12 +173,9 @@ def process_windowed_files(path, output_file_path, lb_freq_start, lb_freq_end, l
             print("Saved PNG to >> " + out_png_filepath)
             save_to_ascii_file(output_data, out_dat_filepath)
             print("Saved DAT to >> " + out_dat_filepath)
-
-    
         except Exception as e:
             print("Cannot process >> ", filepath)
             print("Reason >> " + str(e))
-            
         finally:
             print()
     
@@ -183,6 +185,7 @@ def process_windowed_files(path, output_file_path, lb_freq_start, lb_freq_end, l
             pass
         finally:
             pass
+
         windowed_files = glob.glob(path + "*_windowed.dat")
         for windowed_file in windowed_files:           
             with open(windowed_file, 'r') as windowed_f:
