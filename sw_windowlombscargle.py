@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 import numpy as np
 import math
+from astropy.timeseries import LombScargle
 
 def read_raw_file_data(filepath):
     '''
@@ -117,16 +118,23 @@ def plot_graph(data, out_filepath, lb_freq_start=0.01, lb_freq_end=4.0, lb_freq_
     #Calculate Lomb-Scargle periodogram:
     pgram = signal.lombscargle(x, y, f, normalize=False)
 
+    # Calculate Lomb-Scargle periodogram:
+    astropy_lombscargle_freq, asctropy_lombscargle_power = LombScargle(x, y).autopower()
+
     # Create figure with 2 subplots
     fig = plt.figure()
-    source_ax = fig.add_subplot(211)
-    pgram_ax = fig.add_subplot(212)
+    source_ax = fig.add_subplot(311)
+    pgram_ax = fig.add_subplot(312)
+    astrpopy_ax = fig.add_subplot(313)
 
     #Now make a plot of the input data:
     source_ax.plot(x, y, 'b+')
 
     #Then plot the normalized periodogram:
     pgram_ax.plot(f, pgram)
+
+    # Plot astropy periodogram
+    astrpopy_ax.plot(astropy_lombscargle_freq, asctropy_lombscargle_power)
 
     if to_display:
         plt.show()
@@ -199,8 +207,8 @@ def main():
 
     files = glob.glob("./input/*.dat")              # Change path here or write filepath
     OUTPUT_PATH = "./output/"                       # Change output here
-    WINDOW = 300                                    # Change window value here
-    STEP = 150                                      # Change step value here
+    WINDOW = 1000                                    # Change window value here
+    STEP = 1000                                     # Change step value here
     FREQ_START = 0.01                               # Change freq start here
     FREQ_END = 4.0                                  # Change freq end here
     FREQ_NUM = 100000                               # Change freq num here
